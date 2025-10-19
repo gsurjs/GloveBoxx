@@ -1,3 +1,5 @@
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/maintenance_record.dart';
@@ -69,16 +71,24 @@ class _MaintenanceLogScreenState extends State<MaintenanceLogScreen> {
                         if (record.receiptPath != null)
                           IconButton(
                             icon: const Icon(Icons.receipt_long),
-                            onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder: (_) => Dialog(
-                                  child: Image.file(
-                                    File(record.receiptPath!),
-                                    fit: BoxFit.contain,
+                            onPressed: () async { // Make the function async
+                              // Find the app's documents directory
+                              final directory = await getApplicationDocumentsDirectory();
+                              // Create the full path by joining the directory and the filename
+                              final fullPath = p.join(directory.path, record.receiptPath!);
+                              final imageFile = File(fullPath);
+
+                              if (await imageFile.exists() && context.mounted) {
+                                showDialog(
+                                  context: context,
+                                  builder: (_) => Dialog(
+                                    child: Image.file(
+                                      imageFile, // Use the file with the full path
+                                      fit: BoxFit.contain,
+                                    ),
                                   ),
-                                ),
-                              );
+                                );
+                              }
                             },
                           ),
                       ],
