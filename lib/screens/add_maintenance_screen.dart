@@ -85,7 +85,7 @@ class _AddMaintenanceScreenState extends State<AddMaintenanceScreen> {
         cost: double.parse(_costController.text.replaceAll('\$', '').replaceAll(',', '')),
         notes: _notesController.text,
         nextDueDate: nextDueDate,
-        receiptPath: _receiptImage?.path, // Save the receipt image path
+        receiptPath: _receiptImage != null ? p.basename(_receiptImage!.path) : null,// Save the receipt image path
       );
 
       await DatabaseHelper.instance.createMaintenanceRecord(newRecord);

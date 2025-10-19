@@ -49,7 +49,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
         model: _modelController.text,
         year: int.parse(cleanedYear),
         mileage: int.parse(cleanedMileage),
-        photoPath: _vehicleImage?.path, // Save the image path
+        photoPath: _vehicleImage != null ? p.basename(_vehicleImage!.path) : null, // Save the image path
       );
       widget.onAddVehicle(newVehicle);
       Navigator.of(context).pop();

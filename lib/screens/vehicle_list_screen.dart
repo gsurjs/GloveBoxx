@@ -1,3 +1,5 @@
+import 'dart:io';
+import '../widgets/local_image_widget.dart';
 import 'package:flutter/material.dart';
 import '../models/vehicle.dart';
 import '../services/database_helper.dart'; 
@@ -69,7 +71,10 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                 return Card(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ListTile(
-                    leading: const Icon(Icons.directions_car, size: 40),
+                    leading: LocalImage(
+                      fileName: vehicle.photoPath,
+                      placeholderIcon: Icons.directions_car,
+                    ),
                     title: Text('${vehicle.year} ${vehicle.make} ${vehicle.model}'),
                     subtitle: Text('${vehicle.mileage} mi'),
                     trailing: const Icon(Icons.arrow_forward_ios),
