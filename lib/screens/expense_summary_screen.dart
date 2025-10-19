@@ -73,6 +73,10 @@ class _ExpenseSummaryScreenState extends State<ExpenseSummaryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Determine the color for chart elements based on theme brightness
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final chartElementsColor = isDarkMode ? Colors.white70 : Colors.black54;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Expense Summary'),
@@ -117,7 +121,7 @@ class _ExpenseSummaryScreenState extends State<ExpenseSummaryScreen> {
           return ListView(
             padding: const EdgeInsets.all(16.0),
             children: [
-              // ... All the Card and Chart widgets are here ...
+              // ... The Card and PieChart widgets remain the same ...
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -127,7 +131,10 @@ class _ExpenseSummaryScreenState extends State<ExpenseSummaryScreen> {
                       const SizedBox(height: 8),
                       Text(
                         NumberFormat.currency(symbol: '\$').format(totalSpent),
-                        style: TextStyle(fontSize: 28, color: Theme.of(context).primaryColor),
+                        style: TextStyle(
+                          fontSize: 28,
+                          color: isDarkMode ? Colors.blue.shade200 : Theme.of(context).primaryColor,
+                        ),
                       ),
                     ],
                   ),
@@ -175,14 +182,19 @@ class _ExpenseSummaryScreenState extends State<ExpenseSummaryScreen> {
                   height: 200,
                   child: LineChart(
                     LineChartData(
-                      gridData: const FlGridData(show: true),
+                      gridData: FlGridData(
+                        show: true,
+                        // Use the dynamic color
+                        getDrawingHorizontalLine: (value) => FlLine(color: chartElementsColor.withOpacity(0.2), strokeWidth: 1),
+                        getDrawingVerticalLine: (value) => FlLine(color: chartElementsColor.withOpacity(0.2), strokeWidth: 1),
+                      ),
                       titlesData: FlTitlesData(
-                        bottomTitles: AxisTitles(sideTitles: _bottomTitles(monthlyData)),
-                        leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 40)),
+                        bottomTitles: AxisTitles(sideTitles: _bottomTitles(monthlyData, chartElementsColor)),
+                        leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 44, getTitlesWidget: (value, meta) => Text('\$${value.toInt()}', style: TextStyle(color: chartElementsColor, fontSize: 12), textAlign: TextAlign.left))),
                         topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                         rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                       ),
-                      borderData: FlBorderData(show: true),
+                      borderData: FlBorderData(show: true, border: Border.all(color: chartElementsColor)),
                       minY: 0,
                       lineBarsData: [
                         LineChartBarData(
@@ -190,12 +202,13 @@ class _ExpenseSummaryScreenState extends State<ExpenseSummaryScreen> {
                             return FlSpot(i.toDouble(), monthlyData[i].totalCost);
                           }),
                           isCurved: true,
-                          color: Theme.of(context).primaryColor,
+                          color: isDarkMode ? Colors.blue.shade300 : Theme.of(context).primaryColor,
                           barWidth: 4,
                           isStrokeCapRound: true,
                           belowBarData: BarAreaData(
                             show: true,
-                            color: Theme.of(context).primaryColor.withAlpha((255 * 0.3).round()),
+                            color: (isDarkMode ? Colors.blue.shade300 : Theme.of(context).primaryColor)
+                                .withAlpha((255 * 0.3).round()),
                           ),
                         ),
                       ],
@@ -219,10 +232,12 @@ class _ExpenseSummaryScreenState extends State<ExpenseSummaryScreen> {
     );
   }
 
-  SideTitles _bottomTitles(List<ExpenseMonthlyData> monthlyData) {
+  // Update the helper method to accept the dynamic color
+  SideTitles _bottomTitles(List<ExpenseMonthlyData> monthlyData, Color textColor) {
     return SideTitles(
       showTitles: true,
       reservedSize: 30,
+      interval: 1,
       getTitlesWidget: (value, meta) {
         final int index = value.toInt();
         if (index >= 0 && index < monthlyData.length) {
@@ -231,7 +246,7 @@ class _ExpenseSummaryScreenState extends State<ExpenseSummaryScreen> {
           return SideTitleWidget(
             axisSide: meta.axisSide,
             space: 8.0,
-            child: Text(monthLabel, style: const TextStyle(fontSize: 12)),
+            child: Text(monthLabel, style: TextStyle(fontSize: 12, color: textColor)),
           );
         }
         return const Text('');
