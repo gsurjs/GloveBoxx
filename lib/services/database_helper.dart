@@ -73,6 +73,7 @@ class DatabaseHelper {
       serviceProvider TEXT,
       notes TEXT,
       receiptPath TEXT,
+      nextDueDate TEXT,
       FOREIGN KEY (vehicleId) REFERENCES vehicles (id) ON DELETE CASCADE
     )
     ''');

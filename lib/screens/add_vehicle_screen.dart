@@ -1,83 +1,164 @@
 import 'package:flutter/material.dart';
-import '../models/vehicle.dart';
+import 'package:intl/intl.dart';
+import '../models/maintenance_record.dart';
+import '../services/database_helper.dart';
 
-class AddVehicleScreen extends StatefulWidget {
-  final Function(Vehicle) onAddVehicle;
-
-  const AddVehicleScreen({super.key, required this.onAddVehicle});
+class AddMaintenanceScreen extends StatefulWidget {
+  final int vehicleId;
+  const AddMaintenanceScreen({super.key, required this.vehicleId});
 
   @override
-  State<AddVehicleScreen> createState() => _AddVehicleScreenState();
+  State<AddMaintenanceScreen> createState() => _AddMaintenanceScreenState();
 }
 
-class _AddVehicleScreenState extends State<AddVehicleScreen> {
+class _AddMaintenanceScreenState extends State<AddMaintenanceScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _makeController = TextEditingController();
-  final _modelController = TextEditingController();
-  final _yearController = TextEditingController();
+  final _typeController = TextEditingController();
   final _mileageController = TextEditingController();
+  final _costController = TextEditingController();
+  final _notesController = TextEditingController();
+  DateTime? _selectedDate;
 
-  void _submitData() {
+  // State for reminder UI
+  bool _setReminder = false;
+  int _reminderValue = 3;
+  String _reminderUnit = 'Months';
+
+  void _presentDatePicker() {
+    showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+    ).then((pickedDate) {
+      if (pickedDate == null) return;
+      setState(() => _selectedDate = pickedDate);
+    });
+  }
+
+  void _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      // Clean the input strings by removing commas
-      final cleanedMileage = _mileageController.text.replaceAll(',', '');
-      final cleanedYear = _yearController.text.replaceAll(',', '');
-      final newVehicle = Vehicle(
-        // Using a temporary ID
-        id: DateTime.now().millisecondsSinceEpoch,
-        make: _makeController.text,
-        model: _modelController.text,
-        year: int.parse(cleanedYear),
-        mileage: int.parse(cleanedMileage),
+      if (_selectedDate == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a date.')),
+        );
+        return;
+      }
+
+      DateTime? nextDueDate;
+      if (_setReminder) {
+        int daysToAdd = 0;
+        if (_reminderUnit == 'Days') {
+          daysToAdd = _reminderValue;
+        } else if (_reminderUnit == 'Weeks') {
+          daysToAdd = _reminderValue * 7;
+        } else if (_reminderUnit == 'Months') {
+          daysToAdd = _reminderValue * 30; // Approximation
+        }
+        nextDueDate = _selectedDate!.add(Duration(days: daysToAdd));
+      }
+
+      final newRecord = MaintenanceRecord(
+        vehicleId: widget.vehicleId,
+        type: _typeController.text,
+        date: _selectedDate!,
+        mileage: int.parse(_mileageController.text.replaceAll(',', '')),
+        cost: double.parse(_costController.text.replaceAll('\$', '').replaceAll(',', '')),
+        notes: _notesController.text,
+        nextDueDate: nextDueDate,
       );
-      widget.onAddVehicle(newVehicle);
-      Navigator.of(context).pop();
+
+      await DatabaseHelper.instance.createMaintenanceRecord(newRecord);
+      if (mounted) Navigator.of(context).pop();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Add Vehicle'),
-      ),
+      appBar: AppBar(title: const Text('New Maintenance Entry')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: ListView(
-            children: <Widget>[
+            children: [
+              // ... (Other TextFormFields for type, mileage, cost remain the same)
               TextFormField(
-                controller: _makeController,
-                decoration: const InputDecoration(labelText: 'Vehicle Make *'),
-                validator: (value) =>
-                    value!.isEmpty ? 'Please enter a make' : null,
-              ),
-              TextFormField(
-                controller: _modelController,
-                decoration: const InputDecoration(labelText: 'Vehicle Model *'),
-                validator: (value) =>
-                    value!.isEmpty ? 'Please enter a model' : null,
-              ),
-              TextFormField(
-                controller: _yearController,
-                decoration: const InputDecoration(labelText: 'Year *'),
-                keyboardType: TextInputType.number,
-                validator: (value) =>
-                    value!.isEmpty ? 'Please enter a year' : null,
+                controller: _typeController,
+                decoration: const InputDecoration(labelText: 'Maintenance Type *'),
+                validator: (value) => value!.isEmpty ? 'Please enter a type' : null,
               ),
               TextFormField(
                 controller: _mileageController,
-                decoration: const InputDecoration(labelText: 'Current Mileage *'),
+                decoration: const InputDecoration(labelText: 'Mileage *'),
                 keyboardType: TextInputType.number,
-                validator: (value) =>
-                    value!.isEmpty ? 'Please enter mileage' : null,
+                validator: (value) => value!.isEmpty ? 'Please enter mileage' : null,
               ),
+              TextFormField(
+                controller: _costController,
+                decoration: const InputDecoration(labelText: 'Cost *'),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                validator: (value) => value!.isEmpty ? 'Please enter a cost' : null,
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _selectedDate == null
+                          ? 'No Date Chosen!'
+                          : 'Date: ${DateFormat.yMd().format(_selectedDate!)}',
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _presentDatePicker,
+                    child: const Text('Choose Date', style: TextStyle(fontWeight: FontWeight.bold)),
+                  )
+                ],
+              ),
+              TextFormField(
+                controller: _notesController,
+                decoration: const InputDecoration(labelText: 'Notes'),
+                maxLines: 3,
+              ),
+              const Divider(height: 30),
+              // Reminder UI
+              CheckboxListTile(
+                title: const Text('Set Reminder'),
+                value: _setReminder,
+                onChanged: (bool? value) {
+                  setState(() => _setReminder = value!);
+                },
+              ),
+              if (_setReminder)
+                Row(
+                  children: [
+                    const SizedBox(width: 16),
+                    const Text('Remind me in:'),
+                    const SizedBox(width: 10),
+                    DropdownButton<int>(
+                      value: _reminderValue,
+                      items: List.generate(12, (i) => i + 1)
+                          .map((val) => DropdownMenuItem(value: val, child: Text(val.toString())))
+                          .toList(),
+                      onChanged: (val) => setState(() => _reminderValue = val!),
+                    ),
+                    const SizedBox(width: 10),
+                    DropdownButton<String>(
+                      value: _reminderUnit,
+                      items: ['Days', 'Weeks', 'Months']
+                          .map((unit) => DropdownMenuItem(value: unit, child: Text(unit)))
+                          .toList(),
+                      onChanged: (val) => setState(() => _reminderUnit = val!),
+                    ),
+                  ],
+                ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: _submitData,
-                child: const Text('Save Vehicle'),
-              ),
+                onPressed: _submitForm,
+                child: const Text('Save Entry'),
+              )
             ],
           ),
         ),
