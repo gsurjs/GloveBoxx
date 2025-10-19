@@ -77,13 +77,20 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                   child: ListTile(
                     leading: Icon(
                       upcoming.isEmpty ? Icons.check_circle_outline : Icons.warning_amber_rounded,
-                      color: upcoming.isEmpty ? Colors.green : Colors.orange,
+                      color: upcoming.isEmpty ? Colors.green.shade800 : Colors.orange.shade800,
                     ),
-                    title: const Text('Upcoming Maintenance'),
+                    title: Text(
+                      'Upcoming Maintenance',
+                      style: TextStyle(
+                        color: Colors.grey.shade900, // Explicitly set a dark color
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     subtitle: Text(
                       upcoming.isEmpty
                           ? 'No services due soon!'
                           : '${upcoming.length} service(s) due within 2 weeks',
+                      style: TextStyle(color: Colors.grey.shade800), // Explicitly set a dark color
                     ),
                   ),
                 ),
