@@ -1,6 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:csv/csv.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/expense_category_data.dart';
 import '../models/expense_monthly_data.dart';
 import '../services/database_helper.dart';
@@ -25,11 +29,46 @@ class _ExpenseSummaryScreenState extends State<ExpenseSummaryScreen> {
     _expenseDataFuture = _fetchExpenseData();
   }
 
-  // Fetch both sets of data at the same time
   Future<Map<String, dynamic>> _fetchExpenseData() async {
     final categoryData = await DatabaseHelper.instance.getExpensesByCategory();
     final monthlyData = await DatabaseHelper.instance.getExpensesByMonth();
     return {'categoryData': categoryData, 'monthlyData': monthlyData};
+  }
+
+  Future<void> _exportReport() async {
+    final allRecords = await DatabaseHelper.instance.getAllRecordsForReport();
+
+    if (allRecords.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No data to export.')),
+      );
+      return;
+    }
+
+    List<List<dynamic>> rows = [];
+    // Add header row
+    rows.add(['Date', 'Vehicle', 'Type', 'Cost', 'Mileage', 'Notes']);
+    // Add data rows
+    for (var record in allRecords) {
+      final date = DateTime.parse(record['date']);
+      rows.add([
+        DateFormat.yMd().format(date),
+        '${record['year']} ${record['make']} ${record['model']}',
+        record['type'],
+        record['cost'],
+        record['mileage'],
+        record['notes']
+      ]);
+    }
+
+    String csv = const ListToCsvConverter().convert(rows);
+
+    final directory = await getTemporaryDirectory();
+    final path = '${directory.path}/maintenance_report.csv';
+    final file = File(path);
+    await file.writeAsString(csv);
+
+    await Share.shareXFiles([XFile(path)], text: 'Vehicle Maintenance Report');
   }
 
   @override
@@ -54,8 +93,21 @@ class _ExpenseSummaryScreenState extends State<ExpenseSummaryScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No expense data to display.'));
+          if (!snapshot.hasData || snapshot.data!['categoryData'].isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('No expense data to display.'),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.share),
+                    label: const Text('Export Report'),
+                    onPressed: _exportReport,
+                  ),
+                ],
+              ),
+            );
           }
 
           final List<ExpenseCategoryData> categoryData = snapshot.data!['categoryData'];
@@ -65,7 +117,7 @@ class _ExpenseSummaryScreenState extends State<ExpenseSummaryScreen> {
           return ListView(
             padding: const EdgeInsets.all(16.0),
             children: [
-              // --- Total Spent Card ---
+              // ... All the Card and Chart widgets are here ...
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -82,8 +134,6 @@ class _ExpenseSummaryScreenState extends State<ExpenseSummaryScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              
-              // --- Pie Chart Section ---
               if (categoryData.isNotEmpty) ...[
                 const Text('Expenses by Category', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
@@ -117,10 +167,7 @@ class _ExpenseSummaryScreenState extends State<ExpenseSummaryScreen> {
                   );
                 }),
               ],
-              
               const Divider(height: 40),
-
-              // --- Line Chart Section ---
               if (monthlyData.isNotEmpty) ...[
                 const Text('Monthly Trends', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 24),
@@ -156,6 +203,15 @@ class _ExpenseSummaryScreenState extends State<ExpenseSummaryScreen> {
                   ),
                 ),
               ],
+              const SizedBox(height: 30),
+              Center(
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.share),
+                  label: const Text('Export Report'),
+                  onPressed: _exportReport,
+                ),
+              ),
+              const SizedBox(height: 20),
             ],
           );
         },
@@ -163,7 +219,6 @@ class _ExpenseSummaryScreenState extends State<ExpenseSummaryScreen> {
     );
   }
 
-  // Helper method to create bottom titles for the line chart
   SideTitles _bottomTitles(List<ExpenseMonthlyData> monthlyData) {
     return SideTitles(
       showTitles: true,
@@ -171,7 +226,6 @@ class _ExpenseSummaryScreenState extends State<ExpenseSummaryScreen> {
       getTitlesWidget: (value, meta) {
         final int index = value.toInt();
         if (index >= 0 && index < monthlyData.length) {
-          // Format 'YYYY-MM' to 'MMM'
           final monthDate = DateTime.parse('${monthlyData[index].month}-01');
           final String monthLabel = DateFormat.MMM().format(monthDate);
           return SideTitleWidget(
