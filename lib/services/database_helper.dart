@@ -157,6 +157,25 @@ class DatabaseHelper {
     }).toList();
   }
 
+  Future<List<Map<String, dynamic>>> getAllRecordsForReport() async {
+  final db = await instance.database;
+  final result = await db.rawQuery('''
+    SELECT
+      m.date,
+      m.type,
+      m.cost,
+      m.mileage,
+      m.notes,
+      v.year,
+      v.make,
+      v.model
+    FROM maintenance_records m
+    JOIN vehicles v ON m.vehicleId = v.id
+    ORDER BY m.date DESC
+  ''');
+  return result;
+}
+
   // Vehicle CRUD Methods
 
   Future<Vehicle> createVehicle(Vehicle vehicle) async {
