@@ -4,6 +4,7 @@ import '../models/maintenance_record.dart';
 import '../models/vehicle.dart';
 import '../services/database_helper.dart';
 import 'add_maintenance_screen.dart';
+import 'dart:io';
 
 
 class MaintenanceLogScreen extends StatefulWidget {
@@ -57,9 +58,30 @@ class _MaintenanceLogScreenState extends State<MaintenanceLogScreen> {
                     subtitle: Text(
                       '${DateFormat.yMMMd().format(record.date)} - ${record.mileage} mi',
                     ),
-                    trailing: Text(
-                      NumberFormat.currency(symbol: '\$').format(record.cost),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          NumberFormat.currency(symbol: '\$').format(record.cost),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        // Show receipt icon if a path exists
+                        if (record.receiptPath != null)
+                          IconButton(
+                            icon: const Icon(Icons.receipt_long),
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (_) => Dialog(
+                                  child: Image.file(
+                                    File(record.receiptPath!),
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                      ],
                     ),
                   ),
                 );

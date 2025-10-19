@@ -1,5 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import '../models/maintenance_record.dart';
 import '../services/database_helper.dart';
 
@@ -18,10 +22,26 @@ class _AddMaintenanceScreenState extends State<AddMaintenanceScreen> {
   final _costController = TextEditingController();
   final _notesController = TextEditingController();
   DateTime? _selectedDate;
+  File? _receiptImage;
 
   bool _setReminder = false;
   int _reminderValue = 3;
   String _reminderUnit = 'Months';
+
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image == null) return;
+
+    final appDir = await getApplicationDocumentsDirectory();
+    final fileName = p.basename(image.path);
+    final savedImage = await File(image.path).copy('${appDir.path}/$fileName');
+
+    setState(() {
+      _receiptImage = savedImage;
+    });
+  }
 
   void _presentDatePicker() {
     showDatePicker(
@@ -65,6 +85,7 @@ class _AddMaintenanceScreenState extends State<AddMaintenanceScreen> {
         cost: double.parse(_costController.text.replaceAll('\$', '').replaceAll(',', '')),
         notes: _notesController.text,
         nextDueDate: nextDueDate,
+        receiptPath: _receiptImage?.path, // Save the receipt image path
       );
 
       await DatabaseHelper.instance.createMaintenanceRecord(newRecord);
@@ -120,7 +141,31 @@ class _AddMaintenanceScreenState extends State<AddMaintenanceScreen> {
                 decoration: const InputDecoration(labelText: 'Notes'),
                 maxLines: 3,
               ),
+              
+              // --- Receipt Upload UI ---
               const Divider(height: 30),
+              const Text('Attach Receipt (Optional)', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _pickImage,
+                    icon: const Icon(Icons.camera_alt),
+                    label: const Text('Attach Image'),
+                  ),
+                  const SizedBox(width: 10),
+                  if (_receiptImage != null)
+                    const Icon(Icons.check_circle, color: Colors.green),
+                ],
+              ),
+              if (_receiptImage != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10.0),
+                  child: Image.file(_receiptImage!, height: 150, fit: BoxFit.cover),
+                ),
+
+              const Divider(height: 30),
+              // Reminder UI
               CheckboxListTile(
                 title: const Text('Set Reminder'),
                 value: _setReminder,
