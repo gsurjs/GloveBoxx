@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import '../models/upcoming_maintenance_view.dart';
 import '../models/vehicle.dart';
 import '../services/database_helper.dart';
+import 'package:provider/provider.dart';
+import '../providers/theme_provider.dart';
 
 class HomeDashboardScreen extends StatefulWidget {
   const HomeDashboardScreen({super.key});
@@ -31,6 +33,18 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Home Dashboard'),
+        actions: [
+          IconButton(
+            icon: Icon(
+              Provider.of<ThemeProvider>(context).themeMode == ThemeMode.light 
+              ? Icons.dark_mode_outlined 
+              : Icons.light_mode_outlined
+            ),
+            onPressed: () {
+              Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
+            },
+          )
+        ],
       ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: _dashboardData,

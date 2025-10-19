@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
-import 'screens/main_screen.dart'; // changed to MainScreen
+import 'package:provider/provider.dart';
+import 'providers/theme_provider.dart';
+import 'screens/main_screen.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ThemeProvider(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -10,13 +17,23 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Watch for theme changes
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return MaterialApp(
       title: 'Vehicle Maintenance Tracker',
-      theme: ThemeData(
+      theme: ThemeData( // light theme
+        brightness: Brightness.light,
         primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity
+        visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: const MainScreen(), // changed to MainScreen
+      darkTheme: ThemeData( // dark theme
+        brightness: Brightness.dark,
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      themeMode: themeProvider.themeMode, // Use the mode from the provider
+      home: const MainScreen(),
     );
   }
 }
