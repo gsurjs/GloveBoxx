@@ -1,6 +1,6 @@
 class MaintenanceRecord {
   final int? id;
-  final int vehicleId; // Foreign key to link with a Vehicle
+  final int vehicleId;
   final String type;
   final DateTime date;
   final int mileage;
@@ -8,6 +8,7 @@ class MaintenanceRecord {
   final String? serviceProvider;
   final String? notes;
   final String? receiptPath;
+  final DateTime? nextDueDate; // The missing property
 
   MaintenanceRecord({
     this.id,
@@ -19,32 +20,35 @@ class MaintenanceRecord {
     this.serviceProvider,
     this.notes,
     this.receiptPath,
+    this.nextDueDate, // Added to the constructor
   });
 
-  factory MaintenanceRecord.fromMap(Map<String, dynamic> json) => MaintenanceRecord(
-      id: json['id'] as int,
-      vehicleId: json['vehicleId'] as int,
-      type: json['type'] as String,
-      date: DateTime.parse(json['date'] as String),
-      mileage: json['mileage'] as int,
-      cost: json['cost'] as double,
-      serviceProvider: json['serviceProvider'] as String?,
-      notes: json['notes'] as String?,
-      receiptPath: json['receiptPath'] as String?,
-    );
-
-  // Method to convert a MaintenanceRecord object to a Map
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'vehicleId': vehicleId,
       'type': type,
-      'date': date.toIso8601String(), // Store dates as strings
+      'date': date.toIso8601String(),
       'mileage': mileage,
       'cost': cost,
       'serviceProvider': serviceProvider,
       'notes': notes,
       'receiptPath': receiptPath,
+      'nextDueDate': nextDueDate?.toIso8601String(), // Added for database saving
     };
   }
+
+  factory MaintenanceRecord.fromMap(Map<String, dynamic> json) => MaintenanceRecord(
+        id: json['id'] as int,
+        vehicleId: json['vehicleId'] as int,
+        type: json['type'] as String,
+        date: DateTime.parse(json['date'] as String),
+        mileage: json['mileage'] as int,
+        cost: json['cost'] as double,
+        serviceProvider: json['serviceProvider'] as String?,
+        notes: json['notes'] as String?,
+        receiptPath: json['receiptPath'] as String?,
+        // Added to read from the database
+        nextDueDate: json['nextDueDate'] == null ? null : DateTime.parse(json['nextDueDate'] as String),
+      );
 }
