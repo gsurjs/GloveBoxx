@@ -19,13 +19,16 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
 
   void _submitData() {
     if (_formKey.currentState!.validate()) {
+      // Clean the input strings by removing commas
+      final cleanedMileage = _mileageController.text.replaceAll(',', '');
+      final cleanedYear = _yearController.text.replaceAll(',', '');
       final newVehicle = Vehicle(
         // Using a temporary ID
         id: DateTime.now().millisecondsSinceEpoch,
         make: _makeController.text,
         model: _modelController.text,
-        year: int.parse(_yearController.text),
-        mileage: int.parse(_mileageController.text),
+        year: int.parse(cleanedYear),
+        mileage: int.parse(cleanedMileage),
       );
       widget.onAddVehicle(newVehicle);
       Navigator.of(context).pop();
