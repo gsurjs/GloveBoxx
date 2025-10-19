@@ -46,12 +46,15 @@ class _AddMaintenanceScreenState extends State<AddMaintenanceScreen> {
         return;
       }
 
+      // Clean the cost input string by removing '$' and ','
+      final cleanedCost = _costController.text.replaceAll('\$', '').replaceAll(',', '');
+
       final newRecord = MaintenanceRecord(
         vehicleId: widget.vehicleId,
         type: _typeController.text,
         date: _selectedDate!,
         mileage: int.parse(_mileageController.text.replaceAll(',', '')),
-        cost: double.parse(_costController.text),
+        cost: double.parse(cleanedCost),
         notes: _notesController.text,
       );
 
