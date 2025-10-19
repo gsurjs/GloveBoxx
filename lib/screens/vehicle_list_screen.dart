@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/vehicle.dart'; // Import the Vehicle model
 import 'add_vehicle_screen.dart'; // Import the AddVehicleScreen
 import '../services/database_helper.dart'; // Import the helper
+import 'maintenance_log_screen.dart';
+
 
 class VehicleListScreen extends StatefulWidget {
   const VehicleListScreen({super.key});
@@ -76,7 +78,11 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                     subtitle: Text('${vehicle.mileage} mi'),
                     trailing: const Icon(Icons.arrow_forward_ios),
                     onTap: () {
-                      // TODO: Navigate to Maintenance Log Screen for this vehicle
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => MaintenanceLogScreen(vehicle: vehicle),
+                        ),
+                      );
                     },
                   ),
                 );
