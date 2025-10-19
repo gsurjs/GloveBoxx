@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/vehicle.dart';
 import '../models/maintenance_record.dart';
+import '../models/upcoming_maintenance_view.dart';
 
 class DatabaseHelper {
   // A singleton pattern that ensures one instance of the database helper.
@@ -9,6 +10,45 @@ class DatabaseHelper {
   static Database? _database;
 
   DatabaseHelper._init();
+
+  Future<List<UpcomingMaintenanceView>> getUpcomingMaintenance() async {
+    final db = await instance.database;
+    final fourteenDaysFromNow = DateTime.now().add(const Duration(days: 14)).toIso8601String();
+    final now = DateTime.now().toIso8601String();
+
+    // This query joins the two tables to get all info at once.
+    final result = await db.rawQuery('''
+      SELECT
+        m.id as recordId, m.vehicleId, m.type, m.date, m.mileage, m.cost, m.nextDueDate,
+        v.id as vehicleId, v.make, v.model, v.year, v.mileage as vehicleMileage
+      FROM maintenance_records m
+      JOIN vehicles v ON m.vehicleId = v.id
+      WHERE m.nextDueDate IS NOT NULL AND m.nextDueDate BETWEEN ? AND ?
+      ORDER BY m.nextDueDate ASC
+    ''', [now, fourteenDaysFromNow]);
+
+    List<UpcomingMaintenanceView> upcomingList = [];
+    for (var json in result) {
+      final record = MaintenanceRecord(
+        id: json['recordId'] as int,
+        vehicleId: json['vehicleId'] as int,
+        type: json['type'] as String,
+        date: DateTime.parse(json['date'] as String),
+        mileage: json['mileage'] as int,
+        cost: json['cost'] as double,
+        nextDueDate: DateTime.parse(json['nextDueDate'] as String),
+      );
+      final vehicle = Vehicle(
+        id: json['vehicleId'] as int,
+        make: json['make'] as String,
+        model: json['model'] as String,
+        year: json['year'] as int,
+        mileage: json['vehicleMileage'] as int,
+      );
+      upcomingList.add(UpcomingMaintenanceView(record: record, vehicle: vehicle));
+    }
+    return upcomingList;
+  }
 
   Future<Database> get database async {
     if (_database != null) return _database!;
