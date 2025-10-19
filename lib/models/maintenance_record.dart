@@ -21,6 +21,18 @@ class MaintenanceRecord {
     this.receiptPath,
   });
 
+  factory MaintenanceRecord.fromMap(Map<String, dynamic> json) => MaintenanceRecord(
+      id: json['id'] as int,
+      vehicleId: json['vehicleId'] as int,
+      type: json['type'] as String,
+      date: DateTime.parse(json['date'] as String),
+      mileage: json['mileage'] as int,
+      cost: json['cost'] as double,
+      serviceProvider: json['serviceProvider'] as String?,
+      notes: json['notes'] as String?,
+      receiptPath: json['receiptPath'] as String?,
+    );
+
   // Method to convert a MaintenanceRecord object to a Map
   Map<String, dynamic> toMap() {
     return {

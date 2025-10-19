@@ -23,6 +23,24 @@ class DatabaseHelper {
     return await openDatabase(path, version: 1, onCreate: _createDB);
   }
 
+  Future<MaintenanceRecord> createMaintenanceRecord(MaintenanceRecord record) async {
+    final db = await instance.database;
+    final id = await db.insert('maintenance_records', record.toMap());
+    return record; // You can enhance this to return the record with the new ID
+  }
+
+  Future<List<MaintenanceRecord>> readMaintenanceRecordsForVehicle(int vehicleId) async {
+    final db = await instance.database;
+    final result = await db.query(
+      'maintenance_records',
+      orderBy: 'date DESC', // Show the most recent records first
+      where: 'vehicleId = ?',
+      whereArgs: [vehicleId],
+    );
+
+    return result.map((json) => MaintenanceRecord.fromMap(json)).toList();
+  }
+
   // This method is called when the database is created for the first time.
   Future _createDB(Database db, int version) async {
     const idType = 'INTEGER PRIMARY KEY AUTOINCREMENT';
