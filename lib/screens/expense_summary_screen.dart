@@ -148,7 +148,7 @@ class _ExpenseSummaryScreenState extends State<ExpenseSummaryScreen> {
                           isStrokeCapRound: true,
                           belowBarData: BarAreaData(
                             show: true,
-                            color: Theme.of(context).primaryColor.withOpacity(0.3),
+                            color: Theme.of(context).primaryColor.withAlpha((255 * 0.3).round()),
                           ),
                         ),
                       ],

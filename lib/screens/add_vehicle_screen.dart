@@ -1,4 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import '../models/vehicle.dart';
 
 class AddVehicleScreen extends StatefulWidget {
@@ -16,6 +20,23 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   final _modelController = TextEditingController();
   final _yearController = TextEditingController();
   final _mileageController = TextEditingController();
+  File? _vehicleImage;
+
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image == null) return;
+
+    // Save the image to a permanent location
+    final appDir = await getApplicationDocumentsDirectory();
+    final fileName = p.basename(image.path);
+    final savedImage = await File(image.path).copy('${appDir.path}/$fileName');
+
+    setState(() {
+      _vehicleImage = savedImage;
+    });
+  }
 
   void _submitData() {
     if (_formKey.currentState!.validate()) {
@@ -28,6 +49,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
         model: _modelController.text,
         year: int.parse(cleanedYear),
         mileage: int.parse(cleanedMileage),
+        photoPath: _vehicleImage?.path, // Save the image path
       );
       widget.onAddVehicle(newVehicle);
       Navigator.of(context).pop();
@@ -46,6 +68,25 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
           key: _formKey,
           child: ListView(
             children: <Widget>[
+              // --- Image Picker UI ---
+              Center(
+                child: GestureDetector(
+                  onTap: _pickImage,
+                  child: CircleAvatar(
+                    radius: 60,
+                    backgroundColor: Colors.grey[300],
+                    backgroundImage: _vehicleImage != null ? FileImage(_vehicleImage!) : null,
+                    child: _vehicleImage == null
+                        ? const Icon(Icons.camera_alt, size: 50, color: Colors.grey)
+                        : null,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Center(child: TextButton(onPressed: _pickImage, child: const Text('Upload Photo'))),
+              const SizedBox(height: 20),
+
+              // --- Form Fields ---
               TextFormField(
                 controller: _makeController,
                 decoration: const InputDecoration(labelText: 'Vehicle Make *'),
