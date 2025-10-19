@@ -5,6 +5,7 @@ import '../models/vehicle.dart';
 import '../services/database_helper.dart';
 import 'add_maintenance_screen.dart';
 
+
 class MaintenanceLogScreen extends StatefulWidget {
   final Vehicle vehicle;
 
@@ -69,7 +70,15 @@ class _MaintenanceLogScreenState extends State<MaintenanceLogScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // TODO: Navigate to the AddMaintenanceScreen
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => AddMaintenanceScreen(vehicleId: widget.vehicle.id!),
+            ),
+          ).then((_) {
+            // This code runs after the AddMaintenanceScreen is closed.
+            // refresh the list to show the new entry.
+            _refreshLogs();
+          });
         },
         child: const Icon(Icons.add),
       ),
