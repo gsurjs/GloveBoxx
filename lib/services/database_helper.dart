@@ -3,6 +3,7 @@ import 'package:path/path.dart';
 import '../models/vehicle.dart';
 import '../models/maintenance_record.dart';
 import '../models/upcoming_maintenance_view.dart';
+import '../models/expense_category_data.dart';
 
 class DatabaseHelper {
   // A singleton pattern that ensures one instance of the database helper.
@@ -117,6 +118,24 @@ class DatabaseHelper {
       FOREIGN KEY (vehicleId) REFERENCES vehicles (id) ON DELETE CASCADE
     )
     ''');
+  }
+  // New method to get expenses by category
+  Future<List<ExpenseCategoryData>> getExpensesByCategory() async {
+    final db = await instance.database;
+
+    final result = await db.rawQuery('''
+      SELECT type, SUM(cost) as total
+      FROM maintenance_records
+      GROUP BY type
+      ORDER BY total DESC
+    ''');
+
+    return result.map((json) {
+      return ExpenseCategoryData(
+        category: json['type'] as String,
+        totalCost: json['total'] as double,
+      );
+    }).toList();
   }
 
   // Vehicle CRUD Methods
