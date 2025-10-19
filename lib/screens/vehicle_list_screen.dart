@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import '../models/vehicle.dart'; // Import the Vehicle model
-import 'add_vehicle_screen.dart'; // Import the AddVehicleScreen
-import '../services/database_helper.dart'; // Import the helper
+import '../models/vehicle.dart';
+import '../services/database_helper.dart'; 
+import 'add_vehicle_screen.dart';
 import 'maintenance_log_screen.dart';
-
 
 class VehicleListScreen extends StatefulWidget {
   const VehicleListScreen({super.key});
@@ -13,7 +12,6 @@ class VehicleListScreen extends StatefulWidget {
 }
 
 class _VehicleListScreenState extends State<VehicleListScreen> {
-  // This Future will hold the list of vehicles from the database.
   late Future<List<Vehicle>> _vehiclesFuture;
 
   @override
@@ -21,15 +19,13 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
     super.initState();
     _refreshVehicles();
   }
-
-  // A method to fetch vehicles from the database and update the state.
+  
   void _refreshVehicles() {
     setState(() {
       _vehiclesFuture = DatabaseHelper.instance.readAllVehicles();
     });
   }
 
-  // This method saves to the database and then refreshes the list.
   void _addVehicle(Vehicle vehicle) async {
     await DatabaseHelper.instance.createVehicle(vehicle);
     _refreshVehicles();
@@ -40,7 +36,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
       MaterialPageRoute(
         builder: (context) => AddVehicleScreen(onAddVehicle: _addVehicle),
       ),
-    );
+    ).then((_) => _refreshVehicles());
   }
 
   @override
@@ -78,7 +74,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                     subtitle: Text('${vehicle.mileage} mi'),
                     trailing: const Icon(Icons.arrow_forward_ios),
                     onTap: () {
-                      Navigator.of(context).push(
+                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) => MaintenanceLogScreen(vehicle: vehicle),
                         ),
