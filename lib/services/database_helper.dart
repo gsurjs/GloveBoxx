@@ -65,7 +65,7 @@ class DatabaseHelper {
 
   Future<MaintenanceRecord> createMaintenanceRecord(MaintenanceRecord record) async {
     final db = await instance.database;
-    final id = await db.insert('maintenance_records', record.toMap());
+    await db.insert('maintenance_records', record.toMap());
     return record; // You can enhance this to return the record with the new ID
   }
 
@@ -123,7 +123,7 @@ class DatabaseHelper {
 
   Future<Vehicle> createVehicle(Vehicle vehicle) async {
     final db = await instance.database;
-    final id = await db.insert('vehicles', vehicle.toMap());
+    await db.insert('vehicles', vehicle.toMap());
     return vehicle;
   }
 
