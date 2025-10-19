@@ -4,6 +4,7 @@ import '../models/vehicle.dart';
 import '../models/maintenance_record.dart';
 import '../models/upcoming_maintenance_view.dart';
 import '../models/expense_category_data.dart';
+import '../models/expense_monthly_data.dart';
 
 class DatabaseHelper {
   // A singleton pattern that ensures one instance of the database helper.
@@ -133,6 +134,24 @@ class DatabaseHelper {
     return result.map((json) {
       return ExpenseCategoryData(
         category: json['type'] as String,
+        totalCost: json['total'] as double,
+      );
+    }).toList();
+  }
+
+  Future<List<ExpenseMonthlyData>> getExpensesByMonth() async {
+    final db = await instance.database;
+
+    final result = await db.rawQuery('''
+      SELECT strftime('%Y-%m', date) as month, SUM(cost) as total
+      FROM maintenance_records
+      GROUP BY month
+      ORDER BY month ASC
+    ''');
+
+    return result.map((json) {
+      return ExpenseMonthlyData(
+        month: json['month'] as String,
         totalCost: json['total'] as double,
       );
     }).toList();
