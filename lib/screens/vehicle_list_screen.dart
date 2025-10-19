@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/vehicle.dart'; // Import the Vehicle model
 import 'add_vehicle_screen.dart'; // Import the AddVehicleScreen
+import '../services/database_helper.dart'; // Import the helper
 
 class VehicleListScreen extends StatefulWidget {
   const VehicleListScreen({super.key});
@@ -10,16 +11,26 @@ class VehicleListScreen extends StatefulWidget {
 }
 
 class _VehicleListScreenState extends State<VehicleListScreen> {
-  // Using temporary in-memory data for vehicles
-  final List<Vehicle> _vehicles = [
-    Vehicle(id: 1, make: 'Honda', model: 'Accord', year: 2020, mileage: 45230),
-    Vehicle(id: 2, make: 'Toyota', model: 'Camry', year: 2018, mileage: 62450),
-  ];
+  // This Future will hold the list of vehicles from the database.
+  late Future<List<Vehicle>> _vehiclesFuture;
 
-  void _addVehicle(Vehicle vehicle) {
+  @override
+  void initState() {
+    super.initState();
+    _refreshVehicles();
+  }
+
+  // A method to fetch vehicles from the database and update the state.
+  void _refreshVehicles() {
     setState(() {
-      _vehicles.add(vehicle);
+      _vehiclesFuture = DatabaseHelper.instance.readAllVehicles();
     });
+  }
+
+  // This method saves to the database and then refreshes the list.
+  void _addVehicle(Vehicle vehicle) async {
+    await DatabaseHelper.instance.createVehicle(vehicle);
+    _refreshVehicles();
   }
 
   void _navigateToAddVehicleScreen() {
@@ -42,22 +53,36 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
           ),
         ],
       ),
-      body: ListView.builder(
-        itemCount: _vehicles.length,
-        itemBuilder: (ctx, index) {
-          final vehicle = _vehicles[index];
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: ListTile(
-              leading: const Icon(Icons.directions_car, size: 40),
-              title: Text('${vehicle.year} ${vehicle.make} ${vehicle.model}'),
-              subtitle: Text('${vehicle.mileage} mi'),
-              trailing: const Icon(Icons.arrow_forward_ios),
-              onTap: () {
-                // TODO: Navigate to Maintenance Log Screen for this vehicle
+      body: FutureBuilder<List<Vehicle>>(
+        future: _vehiclesFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('No vehicles found. Add one!'));
+          } else {
+            final vehicles = snapshot.data!;
+            return ListView.builder(
+              itemCount: vehicles.length,
+              itemBuilder: (ctx, index) {
+                final vehicle = vehicles[index];
+                return Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: ListTile(
+                    leading: const Icon(Icons.directions_car, size: 40),
+                    title: Text('${vehicle.year} ${vehicle.make} ${vehicle.model}'),
+                    subtitle: Text('${vehicle.mileage} mi'),
+                    trailing: const Icon(Icons.arrow_forward_ios),
+                    onTap: () {
+                      // TODO: Navigate to Maintenance Log Screen for this vehicle
+                    },
+                  ),
+                );
               },
-            ),
-          );
+            );
+          }
         },
       ),
       floatingActionButton: FloatingActionButton(
