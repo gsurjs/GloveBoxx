@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/vehicle_list_screen.dart';
+import 'screens/main_screen.dart'; // changed to MainScreen
 
 void main() {
   runApp(const MyApp());
@@ -7,7 +7,7 @@ void main() {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-  
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -16,7 +16,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity
       ),
-      home: const VehicleListScreen(),
+      home: const MainScreen(), // changed to MainScreen
     );
   }
 }
