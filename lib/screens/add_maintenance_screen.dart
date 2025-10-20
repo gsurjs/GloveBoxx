@@ -9,7 +9,13 @@ import '../services/database_helper.dart';
 
 class AddMaintenanceScreen extends StatefulWidget {
   final int vehicleId;
-  const AddMaintenanceScreen({super.key, required this.vehicleId});
+  final MaintenanceRecord? record; // Add this line
+
+  const AddMaintenanceScreen({
+    super.key, 
+    required this.vehicleId,
+    this.record, // Add to constructor
+  });
 
   @override
   State<AddMaintenanceScreen> createState() => _AddMaintenanceScreenState();
@@ -17,10 +23,10 @@ class AddMaintenanceScreen extends StatefulWidget {
 
 class _AddMaintenanceScreenState extends State<AddMaintenanceScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _typeController = TextEditingController();
-  final _mileageController = TextEditingController();
-  final _costController = TextEditingController();
-  final _notesController = TextEditingController();
+  late TextEditingController _typeController;
+  late TextEditingController _mileageController;
+  late TextEditingController _costController;
+  late TextEditingController _notesController;
   DateTime? _selectedDate;
   File? _receiptImage;
 
@@ -28,25 +34,51 @@ class _AddMaintenanceScreenState extends State<AddMaintenanceScreen> {
   int _reminderValue = 3;
   String _reminderUnit = 'Months';
 
+  @override
+  void initState() {
+    super.initState();
+    final record = widget.record;
+    _typeController = TextEditingController(text: record?.type ?? '');
+    _mileageController = TextEditingController(text: record?.mileage.toString() ?? '');
+    _costController = TextEditingController(text: record?.cost.toString() ?? '');
+    _notesController = TextEditingController(text: record?.notes ?? '');
+    _selectedDate = record?.date;
+
+    if (record?.nextDueDate != null) {
+      _setReminder = true;
+      // Note: This doesn't reverse-calculate the exact dropdown values,
+      // but it preserves the reminder status.
+    }
+    
+    _loadInitialImage();
+  }
+
+  Future<void> _loadInitialImage() async {
+    if (widget.record?.receiptPath != null) {
+      final appDir = await getApplicationDocumentsDirectory();
+      final fullPath = p.join(appDir.path, widget.record!.receiptPath!);
+      if (mounted) {
+        setState(() {
+          _receiptImage = File(fullPath);
+        });
+      }
+    }
+  }
+
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-
     if (image == null) return;
-
     final appDir = await getApplicationDocumentsDirectory();
     final fileName = p.basename(image.path);
     final savedImage = await File(image.path).copy('${appDir.path}/$fileName');
-
-    setState(() {
-      _receiptImage = savedImage;
-    });
+    setState(() => _receiptImage = savedImage);
   }
 
   void _presentDatePicker() {
     showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: _selectedDate ?? DateTime.now(),
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
     ).then((pickedDate) {
@@ -65,19 +97,18 @@ class _AddMaintenanceScreenState extends State<AddMaintenanceScreen> {
       }
 
       DateTime? nextDueDate;
-      if (_setReminder) {
+      if (_setReminder && widget.record?.nextDueDate == null) {
         int daysToAdd = 0;
-        if (_reminderUnit == 'Days') {
-          daysToAdd = _reminderValue;
-        } else if (_reminderUnit == 'Weeks') {
-          daysToAdd = _reminderValue * 7;
-        } else if (_reminderUnit == 'Months') {
-          daysToAdd = _reminderValue * 30;
-        }
+        if (_reminderUnit == 'Days') daysToAdd = _reminderValue;
+        else if (_reminderUnit == 'Weeks') daysToAdd = _reminderValue * 7;
+        else if (_reminderUnit == 'Months') daysToAdd = _reminderValue * 30;
         nextDueDate = _selectedDate!.add(Duration(days: daysToAdd));
+      } else {
+        nextDueDate = widget.record?.nextDueDate;
       }
 
-      final newRecord = MaintenanceRecord(
+      final newOrUpdatedRecord = MaintenanceRecord(
+        id: widget.record?.id,
         vehicleId: widget.vehicleId,
         type: _typeController.text,
         date: _selectedDate!,
@@ -85,10 +116,15 @@ class _AddMaintenanceScreenState extends State<AddMaintenanceScreen> {
         cost: double.parse(_costController.text.replaceAll('\$', '').replaceAll(',', '')),
         notes: _notesController.text,
         nextDueDate: nextDueDate,
-        receiptPath: _receiptImage != null ? p.basename(_receiptImage!.path) : null,// Save the receipt image path
+        receiptPath: _receiptImage != null ? p.basename(_receiptImage!.path) : null,
       );
 
-      await DatabaseHelper.instance.createMaintenanceRecord(newRecord);
+      if (widget.record == null) {
+        await DatabaseHelper.instance.createMaintenanceRecord(newOrUpdatedRecord);
+      } else {
+        await DatabaseHelper.instance.updateMaintenanceRecord(newOrUpdatedRecord);
+      }
+
       if (mounted) Navigator.of(context).pop();
     }
   }
@@ -96,7 +132,7 @@ class _AddMaintenanceScreenState extends State<AddMaintenanceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('New Maintenance Entry')),
+      appBar: AppBar(title: Text(widget.record == null ? 'New Maintenance Entry' : 'Edit Maintenance Entry')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(

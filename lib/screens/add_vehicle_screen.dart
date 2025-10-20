@@ -30,14 +30,23 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   @override
   void initState() {
     super.initState();
-    // Pre-fill the form if we are editing an existing vehicle
-    final vehicle = widget.vehicle;
-    _makeController = TextEditingController(text: vehicle?.make ?? '');
-    _modelController = TextEditingController(text: vehicle?.model ?? '');
-    _yearController = TextEditingController(text: vehicle?.year.toString() ?? '');
-    _mileageController = TextEditingController(text: vehicle?.mileage.toString() ?? '');
-    if (vehicle?.photoPath != null) {
-      _vehicleImage = File(vehicle!.photoPath!);
+    // Initialize controllers synchronously
+    _makeController = TextEditingController(text: widget.vehicle?.make ?? '');
+    _modelController = TextEditingController(text: widget.vehicle?.model ?? '');
+    _yearController = TextEditingController(text: widget.vehicle?.year.toString() ?? '');
+    _mileageController = TextEditingController(text: widget.vehicle?.mileage.toString() ?? '');
+    
+    // Asynchronously load the initial image file
+    _loadInitialImage();
+  }
+
+  Future<void> _loadInitialImage() async {
+    if (widget.vehicle?.photoPath != null) {
+      final appDir = await getApplicationDocumentsDirectory();
+      final fullPath = p.join(appDir.path, widget.vehicle!.photoPath!);
+      setState(() {
+        _vehicleImage = File(fullPath);
+      });
     }
   }
 
