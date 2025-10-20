@@ -83,6 +83,26 @@ class DatabaseHelper {
     return result.map((json) => MaintenanceRecord.fromMap(json)).toList();
   }
 
+  // Maintenance Record CRUD
+  Future<int> updateMaintenanceRecord(MaintenanceRecord record) async {
+    final db = await instance.database;
+    return await db.update(
+      'maintenance_records',
+      record.toMap(),
+      where: 'id = ?',
+      whereArgs: [record.id],
+    );
+  }
+
+  Future<int> deleteMaintenanceRecord(int id) async {
+    final db = await instance.database;
+    return await db.delete(
+      'maintenance_records',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   // This method is called when the database is created for the first time.
   Future _createDB(Database db, int version) async {
     const idType = 'INTEGER PRIMARY KEY AUTOINCREMENT';
