@@ -56,6 +56,12 @@ class VehicleListScreenState extends State<VehicleListScreen> {
                   itemBuilder: (ctx, index) {
                     final vehicle = vehicles[index];
                     return Card(
+                      // A subtle shadow for depth
+                      elevation: 2.0, 
+                      // Slightly rounded corners for a modern look
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       child: ListTile(
                         leading: LocalImage(
