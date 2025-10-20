@@ -8,6 +8,7 @@ import '../services/database_helper.dart';
 import 'add_maintenance_screen.dart';
 import 'dart:io';
 import '../widgets/empty_state_message.dart';
+import 'package:transparent_image/transparent_image.dart';
 
 
 class MaintenanceLogScreen extends StatefulWidget {
@@ -87,8 +88,9 @@ class _MaintenanceLogScreenState extends State<MaintenanceLogScreen> {
                                 showDialog(
                                   context: context,
                                   builder: (_) => Dialog(
-                                    child: Image.file(
-                                      imageFile, // Use the file with the full path
+                                    child: FadeInImage(
+                                      placeholder: MemoryImage(kTransparentImage),
+                                      image: FileImage(imageFile),
                                       fit: BoxFit.contain,
                                     ),
                                   ),
