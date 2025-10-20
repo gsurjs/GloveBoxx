@@ -36,6 +36,12 @@ class _ExpenseSummaryScreenState extends State<ExpenseSummaryScreen> {
     return {'categoryData': categoryData, 'monthlyData': monthlyData};
   }
 
+  Future<void> _handleRefresh() async {
+    setState(() {
+      _expenseDataFuture = _fetchExpenseData();
+    });
+  }
+
   Future<void> _exportReport() async {
     final allRecords = await DatabaseHelper.instance.getAllRecordsForReport();
     if (!mounted) return;
@@ -47,9 +53,7 @@ class _ExpenseSummaryScreenState extends State<ExpenseSummaryScreen> {
     }
 
     List<List<dynamic>> rows = [];
-    // Add header row
     rows.add(['Date', 'Vehicle', 'Type', 'Cost', 'Mileage', 'Notes']);
-    // Add data rows
     for (var record in allRecords) {
       final date = DateTime.parse(record['date']);
       rows.add([
@@ -63,18 +67,15 @@ class _ExpenseSummaryScreenState extends State<ExpenseSummaryScreen> {
     }
 
     String csv = const ListToCsvConverter().convert(rows);
-
     final directory = await getTemporaryDirectory();
     final path = '${directory.path}/maintenance_report.csv';
     final file = File(path);
     await file.writeAsString(csv);
-
     await Share.shareXFiles([XFile(path)], text: 'Vehicle Maintenance Report');
   }
 
   @override
   Widget build(BuildContext context) {
-    // Determine the color for chart elements based on theme brightness
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final chartElementsColor = isDarkMode ? Colors.white70 : Colors.black54;
 
@@ -84,160 +85,161 @@ class _ExpenseSummaryScreenState extends State<ExpenseSummaryScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () {
-              setState(() {
-                _expenseDataFuture = _fetchExpenseData();
-              });
-            },
+            onPressed: _handleRefresh,
           )
         ],
       ),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: _expenseDataFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data!['categoryData'].isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+      body: RefreshIndicator(
+        onRefresh: _handleRefresh,
+        child: FutureBuilder<Map<String, dynamic>>(
+          future: _expenseDataFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (!snapshot.hasData || snapshot.data!['categoryData'].isEmpty) {
+              return Stack(
                 children: [
-                  const EmptyStateMessage(
-                    icon: Icons.monetization_on_outlined,
-                    title: 'No Expense Data',
-                    message: 'Add a maintenance record with a cost to see your expense summary here.',
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.share),
-                    label: const Text('Export Report'),
-                    onPressed: _exportReport,
-                  ),
-                ],
-              ),
-            );
-          }
-
-          final List<ExpenseCategoryData> categoryData = snapshot.data!['categoryData'];
-          final List<ExpenseMonthlyData> monthlyData = snapshot.data!['monthlyData'];
-          double totalSpent = categoryData.fold(0, (sum, item) => sum + item.totalCost);
-
-          return ListView(
-            padding: const EdgeInsets.all(16.0),
-            children: [
-              // ... The Card and PieChart widgets remain the same ...
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      const Text('Total Spent', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
-                      Text(
-                        NumberFormat.currency(symbol: '\$').format(totalSpent),
-                        style: TextStyle(
-                          fontSize: 28,
-                          color: isDarkMode ? Colors.blue.shade200 : Theme.of(context).primaryColor,
+                  ListView(), // Enables scrolling for RefreshIndicator
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const EmptyStateMessage(
+                          icon: Icons.monetization_on_outlined,
+                          title: 'No Expense Data',
+                          message: 'Add a maintenance record with a cost to see your expense summary here.',
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              if (categoryData.isNotEmpty) ...[
-                const Text('Expenses by Category', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 16),
-                SizedBox(
-                  height: 200,
-                  child: PieChart(
-                    PieChartData(
-                      sectionsSpace: 2,
-                      centerSpaceRadius: 40,
-                      sections: List.generate(categoryData.length, (i) {
-                        final cat = categoryData[i];
-                        final percentage = (cat.totalCost / totalSpent) * 100;
-                        return PieChartSectionData(
-                          color: _categoryColors[i % _categoryColors.length],
-                          value: cat.totalCost,
-                          title: '${percentage.toStringAsFixed(0)}%',
-                          radius: 60,
-                          titleStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                        );
-                      }),
+                        const SizedBox(height: 20),
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.share),
+                          label: const Text('Export Report'),
+                          onPressed: _exportReport,
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                ...List.generate(categoryData.length, (i) {
-                  final cat = categoryData[i];
-                  return ListTile(
-                    leading: Icon(Icons.square, color: _categoryColors[i % _categoryColors.length]),
-                    title: Text(cat.category),
-                    trailing: Text(NumberFormat.currency(symbol: '\$').format(cat.totalCost)),
-                  );
-                }),
-              ],
-              const Divider(height: 40),
-              if (monthlyData.isNotEmpty) ...[
-                const Text('Monthly Trends', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 24),
-                SizedBox(
-                  height: 200,
-                  child: LineChart(
-                    LineChartData(
-                      gridData: FlGridData(
-                        show: true,
-                        // Use the dynamic color
-                        getDrawingHorizontalLine: (value) => FlLine(color: chartElementsColor.withOpacity(0.2), strokeWidth: 1),
-                        getDrawingVerticalLine: (value) => FlLine(color: chartElementsColor.withOpacity(0.2), strokeWidth: 1),
-                      ),
-                      titlesData: FlTitlesData(
-                        bottomTitles: AxisTitles(sideTitles: _bottomTitles(monthlyData, chartElementsColor)),
-                        leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 44, getTitlesWidget: (value, meta) => Text('\$${value.toInt()}', style: TextStyle(color: chartElementsColor, fontSize: 12), textAlign: TextAlign.left))),
-                        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      ),
-                      borderData: FlBorderData(show: true, border: Border.all(color: chartElementsColor)),
-                      minY: 0,
-                      lineBarsData: [
-                        LineChartBarData(
-                          spots: List.generate(monthlyData.length, (i) {
-                            return FlSpot(i.toDouble(), monthlyData[i].totalCost);
-                          }),
-                          isCurved: true,
-                          color: isDarkMode ? Colors.blue.shade300 : Theme.of(context).primaryColor,
-                          barWidth: 4,
-                          isStrokeCapRound: true,
-                          belowBarData: BarAreaData(
-                            show: true,
-                            color: (isDarkMode ? Colors.blue.shade300 : Theme.of(context).primaryColor)
-                                .withAlpha((255 * 0.3).round()),
+                ],
+              );
+            }
+
+            final List<ExpenseCategoryData> categoryData = snapshot.data!['categoryData'];
+            final List<ExpenseMonthlyData> monthlyData = snapshot.data!['monthlyData'];
+            double totalSpent = categoryData.fold(0, (sum, item) => sum + item.totalCost);
+
+            return ListView(
+              padding: const EdgeInsets.all(16.0),
+              children: [
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        const Text('Total Spent', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        Text(
+                          NumberFormat.currency(symbol: '\$').format(totalSpent),
+                          style: TextStyle(
+                            fontSize: 28,
+                            color: isDarkMode ? Colors.blue.shade200 : Theme.of(context).primaryColor,
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-              ],
-              const SizedBox(height: 30),
-              Center(
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.share),
-                  label: const Text('Export Report'),
-                  onPressed: _exportReport,
+                const SizedBox(height: 24),
+                if (categoryData.isNotEmpty) ...[
+                  const Text('Expenses by Category', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    height: 200,
+                    child: PieChart(
+                      PieChartData(
+                        sectionsSpace: 2,
+                        centerSpaceRadius: 40,
+                        sections: List.generate(categoryData.length, (i) {
+                          final cat = categoryData[i];
+                          final percentage = (cat.totalCost / totalSpent) * 100;
+                          return PieChartSectionData(
+                            color: _categoryColors[i % _categoryColors.length],
+                            value: cat.totalCost,
+                            title: '${percentage.toStringAsFixed(0)}%',
+                            radius: 60,
+                            titleStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                          );
+                        }),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ...List.generate(categoryData.length, (i) {
+                    final cat = categoryData[i];
+                    return ListTile(
+                      leading: Icon(Icons.square, color: _categoryColors[i % _categoryColors.length]),
+                      title: Text(cat.category),
+                      trailing: Text(NumberFormat.currency(symbol: '\$').format(cat.totalCost)),
+                    );
+                  }),
+                ],
+                const Divider(height: 40),
+                if (monthlyData.isNotEmpty) ...[
+                  const Text('Monthly Trends', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    height: 200,
+                    child: LineChart(
+                      LineChartData(
+                        gridData: FlGridData(
+                          show: true,
+                          getDrawingHorizontalLine: (value) => FlLine(color: chartElementsColor.withOpacity(0.2), strokeWidth: 1),
+                          getDrawingVerticalLine: (value) => FlLine(color: chartElementsColor.withOpacity(0.2), strokeWidth: 1),
+                        ),
+                        titlesData: FlTitlesData(
+                          bottomTitles: AxisTitles(sideTitles: _bottomTitles(monthlyData, chartElementsColor)),
+                          leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 44, getTitlesWidget: (value, meta) => Text('\$${value.toInt()}', style: TextStyle(color: chartElementsColor, fontSize: 12), textAlign: TextAlign.left))),
+                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        ),
+                        borderData: FlBorderData(show: true, border: Border.all(color: chartElementsColor)),
+                        minY: 0,
+                        lineBarsData: [
+                          LineChartBarData(
+                            spots: List.generate(monthlyData.length, (i) {
+                              return FlSpot(i.toDouble(), monthlyData[i].totalCost);
+                            }),
+                            isCurved: true,
+                            color: isDarkMode ? Colors.blue.shade300 : Theme.of(context).primaryColor,
+                            barWidth: 4,
+                            isStrokeCapRound: true,
+                            belowBarData: BarAreaData(
+                              show: true,
+                              color: (isDarkMode ? Colors.blue.shade300 : Theme.of(context).primaryColor)
+                                  .withAlpha((255 * 0.3).round()),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 30),
+                Center(
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.share),
+                    label: const Text('Export Report'),
+                    onPressed: _exportReport,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
-            ],
-          );
-        },
+                const SizedBox(height: 20),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
 
-  // Update the helper method to accept the dynamic color
   SideTitles _bottomTitles(List<ExpenseMonthlyData> monthlyData, Color textColor) {
     return SideTitles(
       showTitles: true,
