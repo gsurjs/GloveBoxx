@@ -6,9 +6,14 @@ import 'package:path/path.dart' as p;
 import '../models/vehicle.dart';
 
 class AddVehicleScreen extends StatefulWidget {
-  final Function(Vehicle) onAddVehicle;
+  final Function(Vehicle) onSave;
+  final Vehicle? vehicle; // Make vehicle optional for editing
 
-  const AddVehicleScreen({super.key, required this.onAddVehicle});
+  const AddVehicleScreen({
+    super.key, 
+    required this.onSave,
+    this.vehicle, // Add to constructor
+  });
 
   @override
   State<AddVehicleScreen> createState() => _AddVehicleScreenState();
@@ -16,26 +21,34 @@ class AddVehicleScreen extends StatefulWidget {
 
 class _AddVehicleScreenState extends State<AddVehicleScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _makeController = TextEditingController();
-  final _modelController = TextEditingController();
-  final _yearController = TextEditingController();
-  final _mileageController = TextEditingController();
+  late TextEditingController _makeController;
+  late TextEditingController _modelController;
+  late TextEditingController _yearController;
+  late TextEditingController _mileageController;
   File? _vehicleImage;
+
+  @override
+  void initState() {
+    super.initState();
+    // Pre-fill the form if we are editing an existing vehicle
+    final vehicle = widget.vehicle;
+    _makeController = TextEditingController(text: vehicle?.make ?? '');
+    _modelController = TextEditingController(text: vehicle?.model ?? '');
+    _yearController = TextEditingController(text: vehicle?.year.toString() ?? '');
+    _mileageController = TextEditingController(text: vehicle?.mileage.toString() ?? '');
+    if (vehicle?.photoPath != null) {
+      _vehicleImage = File(vehicle!.photoPath!);
+    }
+  }
 
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-
     if (image == null) return;
-
-    // Save the image to a permanent location
     final appDir = await getApplicationDocumentsDirectory();
     final fileName = p.basename(image.path);
     final savedImage = await File(image.path).copy('${appDir.path}/$fileName');
-
-    setState(() {
-      _vehicleImage = savedImage;
-    });
+    setState(() => _vehicleImage = savedImage);
   }
 
   void _submitData() {
@@ -43,15 +56,15 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
       final cleanedMileage = _mileageController.text.replaceAll(',', '');
       final cleanedYear = _yearController.text.replaceAll(',', '');
 
-      final newVehicle = Vehicle(
-        id: DateTime.now().millisecondsSinceEpoch,
+      final newOrUpdatedVehicle = Vehicle(
+        id: widget.vehicle?.id, // Use existing ID if editing, otherwise it's null
         make: _makeController.text,
         model: _modelController.text,
         year: int.parse(cleanedYear),
         mileage: int.parse(cleanedMileage),
-        photoPath: _vehicleImage != null ? p.basename(_vehicleImage!.path) : null, // Save the image path
+        photoPath: _vehicleImage != null ? p.basename(_vehicleImage!.path) : null,
       );
-      widget.onAddVehicle(newVehicle);
+      widget.onSave(newOrUpdatedVehicle);
       Navigator.of(context).pop();
     }
   }
@@ -60,7 +73,8 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add Vehicle'),
+        // Change title based on whether we are adding or editing
+        title: Text(widget.vehicle == null ? 'Add Vehicle' : 'Edit Vehicle'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -68,7 +82,6 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
           key: _formKey,
           child: ListView(
             children: <Widget>[
-              // --- Image Picker UI ---
               Center(
                 child: GestureDetector(
                   onTap: _pickImage,
@@ -85,8 +98,6 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
               const SizedBox(height: 8),
               Center(child: TextButton(onPressed: _pickImage, child: const Text('Upload Photo'))),
               const SizedBox(height: 20),
-
-              // --- Form Fields ---
               TextFormField(
                 controller: _makeController,
                 decoration: const InputDecoration(labelText: 'Vehicle Make *'),

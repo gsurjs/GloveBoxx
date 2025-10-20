@@ -9,9 +9,11 @@ import '../services/database_helper.dart';
 import '../widgets/empty_state_message.dart';
 import '../widgets/local_image_widget.dart';
 import 'maintenance_log_screen.dart';
+import '../models/vehicle.dart';
 
 class HomeDashboardScreen extends StatefulWidget {
-  final VoidCallback? onNavigateRequest;
+  // 1. CHANGE the function type to accept an optional Vehicle
+  final Function({Vehicle? vehicle})? onNavigateRequest;
 
   const HomeDashboardScreen({super.key, this.onNavigateRequest});
 
@@ -38,6 +40,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        // ... AppBar code remains the same
         title: const Text('Home Dashboard'),
         actions: [
           IconButton(
@@ -68,6 +71,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16.0),
               children: [
+                // ... FutureBuilder for Upcoming Maintenance remains the same
                 FutureBuilder<List<UpcomingMaintenanceView>>(
                   future: _upcomingMaintenanceFuture,
                   builder: (context, snapshot) {
@@ -118,7 +122,8 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                     actionButton: ElevatedButton.icon(
                       icon: const Icon(Icons.add),
                       label: const Text('Add Vehicle'),
-                      onPressed: widget.onNavigateRequest,
+                      // 2. UPDATE the onPressed call for the "Add" button
+                      onPressed: () => widget.onNavigateRequest?.call(),
                     ),
                   )
                 else
@@ -126,6 +131,16 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                         endActionPane: ActionPane(
                           motion: const StretchMotion(),
                           children: [
+                            // 3. ADD the new "Edit" action
+                            SlidableAction(
+                              onPressed: (context) {
+                                widget.onNavigateRequest?.call(vehicle: vehicle);
+                              },
+                              backgroundColor: Colors.blue,
+                              foregroundColor: Colors.white,
+                              icon: Icons.edit,
+                              label: 'Edit',
+                            ),
                             SlidableAction(
                               onPressed: (context) {
                                 showDialog(
@@ -143,13 +158,8 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                                         child: const Text('Delete',
                                             style: TextStyle(color: Colors.red)),
                                         onPressed: () {
-                                          // Grab a reference to the provider before the dialog is closed
                                           final vehicleProvider = Provider.of<VehicleProvider>(ctx, listen: false);
-
-                                          // Pop the dialog BEFORE updating the state
                                           Navigator.of(ctx).pop();
-
-                                          // Now, safely update the state and give haptic feedback
                                           vehicleProvider.deleteVehicle(vehicle.id!);
                                           HapticFeedback.mediumImpact();
                                         },
@@ -166,6 +176,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                           ],
                         ),
                         child: Card(
+                          // ... Card contents remain the same
                           elevation: 2.0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10.0),

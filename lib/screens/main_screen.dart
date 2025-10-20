@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'home_dashboard_screen.dart';
 import 'vehicle_list_screen.dart';
 import 'expense_summary_screen.dart';
+import '../models/vehicle.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -25,16 +26,16 @@ class _MainScreenState extends State<MainScreen> {
     // We initialize the list here, inside the state.
     // This allows us to pass the _onItemTapped function to the home screen.
     _widgetOptions = <Widget>[
-      HomeDashboardScreen(onNavigateRequest: _showAddVehicleScreen),
+      HomeDashboardScreen(onNavigateRequest: _showAddOrEditVehicleScreen),
       // Assign the key to the VehicleListScreen
       VehicleListScreen(key: _vehicleListKey),
       const ExpenseSummaryScreen(),
     ];
   }
 
-  void _showAddVehicleScreen() {
-    // Use the key to call the public method on VehicleListScreen
-    _vehicleListKey.currentState?.navigateToAddVehicleScreen();
+  void _showAddOrEditVehicleScreen({Vehicle? vehicle}) {
+    // Pass the optional vehicle to the method that opens the screen
+    _vehicleListKey.currentState?.navigateToAddOrEditVehicleScreen(vehicle: vehicle);
   }
 
   void _onItemTapped(int index) {

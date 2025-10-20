@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:provider/provider.dart';
+import '../models/vehicle.dart';
 import '../providers/vehicle_provider.dart';
 import '../widgets/empty_state_message.dart';
 import '../widgets/local_image_widget.dart';
@@ -16,12 +17,20 @@ class VehicleListScreen extends StatefulWidget {
 }
 
 class VehicleListScreenState extends State<VehicleListScreen> {
-  void navigateToAddVehicleScreen() {
+  void navigateToAddOrEditVehicleScreen({Vehicle? vehicle}) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (ctx) => AddVehicleScreen(
-          onAddVehicle: (vehicle) {
-            Provider.of<VehicleProvider>(context, listen: false).addVehicle(vehicle);
+          vehicle: vehicle, // Pass the vehicle if editing
+          onSave: (updatedVehicle) {
+            final vehicleProvider = Provider.of<VehicleProvider>(context, listen: false);
+            if (vehicle == null) {
+              // This is a new vehicle
+              vehicleProvider.addVehicle(updatedVehicle);
+            } else {
+              // This is an existing vehicle being updated
+              vehicleProvider.updateVehicle(updatedVehicle);
+            }
           },
         ),
       ),
@@ -39,7 +48,7 @@ class VehicleListScreenState extends State<VehicleListScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: navigateToAddVehicleScreen,
+            onPressed: () => navigateToAddOrEditVehicleScreen(),
           ),
         ],
       ),
@@ -51,7 +60,7 @@ class VehicleListScreenState extends State<VehicleListScreen> {
                   title: 'No Vehicles Yet',
                   message: 'Tap the "+" button to add your first vehicle.',
                   actionButton: ElevatedButton.icon(
-                    onPressed: navigateToAddVehicleScreen,
+                    onPressed: () => navigateToAddOrEditVehicleScreen(),
                     icon: const Icon(Icons.add),
                     label: const Text('Add First Vehicle'),
                   ),
@@ -64,6 +73,15 @@ class VehicleListScreenState extends State<VehicleListScreen> {
                       endActionPane: ActionPane(
                         motion: const StretchMotion(),
                         children: [
+                          SlidableAction(
+                            onPressed: (context) {
+                              navigateToAddOrEditVehicleScreen(vehicle: vehicle);
+                            },
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                            icon: Icons.edit,
+                            label: 'Edit',
+                          ),
                           SlidableAction(
                             onPressed: (context) {
                               showDialog(
@@ -80,14 +98,9 @@ class VehicleListScreenState extends State<VehicleListScreen> {
                                     TextButton(
                                       child: const Text('Delete', style: TextStyle(color: Colors.red)),
                                       onPressed: () {
-                                        // Grab a reference to the provider before the dialog is closed
-                                        final vehicleProvider = Provider.of<VehicleProvider>(ctx, listen: false);
-
-                                        // Pop the dialog BEFORE updating the state
+                                        final provider = Provider.of<VehicleProvider>(ctx, listen: false);
                                         Navigator.of(ctx).pop();
-
-                                        // Now, safely update the state and give haptic feedback
-                                        vehicleProvider.deleteVehicle(vehicle.id!);
+                                        provider.deleteVehicle(vehicle.id!);
                                         HapticFeedback.mediumImpact();
                                       },
                                     ),
@@ -129,7 +142,7 @@ class VehicleListScreenState extends State<VehicleListScreen> {
                   },
                 ),
       floatingActionButton: FloatingActionButton(
-        onPressed: navigateToAddVehicleScreen,
+        onPressed: () => navigateToAddOrEditVehicleScreen(),
         child: const Icon(Icons.add),
       ),
     );
