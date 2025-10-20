@@ -13,6 +13,8 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
+  final GlobalKey<VehicleListScreenState> _vehicleListKey = GlobalKey<VehicleListScreenState>();
+
   // This list is now a 'late final' field instead of 'static const'.
   // This is the critical change.
   late final List<Widget> _widgetOptions;
@@ -23,10 +25,16 @@ class _MainScreenState extends State<MainScreen> {
     // We initialize the list here, inside the state.
     // This allows us to pass the _onItemTapped function to the home screen.
     _widgetOptions = <Widget>[
-      HomeDashboardScreen(onNavigateRequest: () => _onItemTapped(1)),
-      const VehicleListScreen(),
+      HomeDashboardScreen(onNavigateRequest: _showAddVehicleScreen),
+      // Assign the key to the VehicleListScreen
+      VehicleListScreen(key: _vehicleListKey),
       const ExpenseSummaryScreen(),
     ];
+  }
+
+  void _showAddVehicleScreen() {
+    // Use the key to call the public method on VehicleListScreen
+    _vehicleListKey.currentState?.navigateToAddVehicleScreen();
   }
 
   void _onItemTapped(int index) {
