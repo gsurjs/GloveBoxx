@@ -206,6 +206,16 @@ class DatabaseHelper {
       whereArgs: [id],
     );
   }
+
+  Future<int> updateVehicle(Vehicle vehicle) async {
+    final db = await instance.database;
+    return await db.update(
+      'vehicles',
+      vehicle.toMap(),
+      where: 'id = ?',
+      whereArgs: [vehicle.id],
+    );
+  }
   
 
   Future close() async {
