@@ -60,6 +60,10 @@ class _MaintenanceLogScreenState extends State<MaintenanceLogScreen> {
               itemBuilder: (ctx, index) {
                 final record = records[index];
                 return Card(
+                  elevation: 2.0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ListTile(
                     title: Text(record.type),

@@ -72,6 +72,10 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                   builder: (context, snapshot) {
                     final upcoming = snapshot.data ?? [];
                     return Card(
+                      elevation: 2.0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
                       color: upcoming.isEmpty ? Colors.green[100] : Colors.yellow[100],
                       child: ListTile(
                         leading: Icon(
@@ -120,6 +124,10 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                   )
                 else
                   ...vehicles.map((vehicle) => Card(
+                        elevation: 2.0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                        ),
                         child: ListTile(
                           leading: LocalImage(
                             fileName: vehicle.photoPath,
