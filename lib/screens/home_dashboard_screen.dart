@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/upcoming_maintenance_view.dart';
-import '../models/vehicle.dart';
 import '../providers/theme_provider.dart';
+import '../providers/vehicle_provider.dart';
 import '../services/database_helper.dart';
 import '../widgets/empty_state_message.dart';
+import '../widgets/local_image_widget.dart';
 
 class HomeDashboardScreen extends StatefulWidget {
   final VoidCallback? onNavigateRequest;
@@ -17,18 +17,18 @@ class HomeDashboardScreen extends StatefulWidget {
 }
 
 class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
-  late Future<Map<String, dynamic>> _dashboardData;
+  late Future<List<UpcomingMaintenanceView>> _upcomingMaintenanceFuture;
 
   @override
   void initState() {
     super.initState();
-    _dashboardData = _fetchDashboardData();
+    _refreshUpcoming();
   }
 
-  Future<Map<String, dynamic>> _fetchDashboardData() async {
-    final vehicles = await DatabaseHelper.instance.readAllVehicles();
-    final upcoming = await DatabaseHelper.instance.getUpcomingMaintenance();
-    return {'vehicles': vehicles, 'upcoming': upcoming};
+  void _refreshUpcoming() {
+    setState(() {
+      _upcomingMaintenanceFuture = DatabaseHelper.instance.getUpcomingMaintenance();
+    });
   }
 
   @override
@@ -49,76 +49,63 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
           )
         ],
       ),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: _dashboardData,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+      body: Consumer<VehicleProvider>(
+        builder: (context, vehicleProvider, child) {
+          if (vehicleProvider.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
-          }
-          if (!snapshot.hasData) {
-            return const Center(child: Text("No data available."));
-          }
 
-          final List<Vehicle> vehicles = snapshot.data!['vehicles'];
-          final List<UpcomingMaintenanceView> upcoming =
-              snapshot.data!['upcoming'];
+          final vehicles = vehicleProvider.vehicles;
 
           return RefreshIndicator(
             onRefresh: () async {
-              setState(() {
-                _dashboardData = _fetchDashboardData();
-              });
+              // Refresh both providers/futures
+              await vehicleProvider.fetchVehicles();
+              _refreshUpcoming();
             },
             child: ListView(
               padding: const EdgeInsets.all(16.0),
               children: [
-                Card(
-                  color:
-                      upcoming.isEmpty ? Colors.green[100] : Colors.yellow[100],
-                  child: ListTile(
-                    leading: Icon(
-                      upcoming.isEmpty
-                          ? Icons.check_circle_outline
-                          : Icons.warning_amber_rounded,
-                      color: upcoming.isEmpty
-                          ? Colors.green.shade800
-                          : Colors.orange.shade800,
-                    ),
-                    title: Text(
-                      'Upcoming Maintenance',
-                      style: TextStyle(
-                        color: Colors.grey.shade900,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    subtitle: Text(
-                      upcoming.isEmpty
-                          ? 'No services due soon!'
-                          : '${upcoming.length} service(s) due within 2 weeks',
-                      style: TextStyle(color: Colors.grey.shade800),
-                    ),
-                  ),
-                ),
-                if (upcoming.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  ...upcoming.map((item) {
+                // Upcoming Maintenance Card
+                FutureBuilder<List<UpcomingMaintenanceView>>(
+                  future: _upcomingMaintenanceFuture,
+                  builder: (context, snapshot) {
+                    final upcoming = snapshot.data ?? [];
                     return Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(
-                            '${item.record.type} for ${item.vehicle.year} ${item.vehicle.make} ${item.vehicle.model} due on ${DateFormat.yMd().format(item.record.nextDueDate!)}'),
+                      color: upcoming.isEmpty ? Colors.green[100] : Colors.yellow[100],
+                      child: ListTile(
+                        leading: Icon(
+                          upcoming.isEmpty
+                              ? Icons.check_circle_outline
+                              : Icons.warning_amber_rounded,
+                          color: upcoming.isEmpty
+                              ? Colors.green.shade800
+                              : Colors.orange.shade800,
+                        ),
+                        title: Text(
+                          'Upcoming Maintenance',
+                          style: TextStyle(
+                            color: Colors.grey.shade900,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        subtitle: Text(
+                          upcoming.isEmpty
+                              ? 'No services due soon!'
+                              : '${upcoming.length} service(s) due within 2 weeks',
+                          style: TextStyle(color: Colors.grey.shade800),
+                        ),
                       ),
                     );
-                  }),
-                ],
+                  },
+                ),
+                
                 const SizedBox(height: 20),
                 const Text('My Vehicles',
                     style:
                         TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 10),
+
                 if (vehicles.isEmpty)
                   EmptyStateMessage(
                     icon: Icons.directions_car_outlined,
@@ -134,6 +121,10 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                 else
                   ...vehicles.map((vehicle) => Card(
                         child: ListTile(
+                          leading: LocalImage(
+                            fileName: vehicle.photoPath,
+                            placeholderIcon: Icons.directions_car,
+                          ),
                           title: Text(
                               '${vehicle.year} ${vehicle.make} ${vehicle.model}'),
                           subtitle:
