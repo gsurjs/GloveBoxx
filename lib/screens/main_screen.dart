@@ -13,11 +13,21 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
-  static const List<Widget> _widgetOptions = <Widget>[
-    HomeDashboardScreen(),
-    VehicleListScreen(),
-    ExpenseSummaryScreen(),
-  ];
+  // This list is now a 'late final' field instead of 'static const'.
+  // This is the critical change.
+  late final List<Widget> _widgetOptions;
+
+  @override
+  void initState() {
+    super.initState();
+    // We initialize the list here, inside the state.
+    // This allows us to pass the _onItemTapped function to the home screen.
+    _widgetOptions = <Widget>[
+      HomeDashboardScreen(onNavigateRequest: () => _onItemTapped(1)),
+      const VehicleListScreen(),
+      const ExpenseSummaryScreen(),
+    ];
+  }
 
   void _onItemTapped(int index) {
     setState(() {

@@ -5,15 +5,16 @@ import '../models/vehicle.dart';
 import '../services/database_helper.dart'; 
 import 'add_vehicle_screen.dart';
 import 'maintenance_log_screen.dart';
+import '../widgets/empty_state_message.dart';
 
 class VehicleListScreen extends StatefulWidget {
   const VehicleListScreen({super.key});
 
   @override
-  State<VehicleListScreen> createState() => _VehicleListScreenState();
+  VehicleListScreenState createState() => VehicleListScreenState();
 }
 
-class _VehicleListScreenState extends State<VehicleListScreen> {
+class VehicleListScreenState extends State<VehicleListScreen> {
   late Future<List<Vehicle>> _vehiclesFuture;
 
   @override
@@ -33,7 +34,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
     _refreshVehicles();
   }
 
-  void _navigateToAddVehicleScreen() {
+  void navigateToAddVehicleScreen() {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => AddVehicleScreen(onAddVehicle: _addVehicle),
@@ -49,7 +50,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: _navigateToAddVehicleScreen,
+            onPressed: navigateToAddVehicleScreen,
           ),
         ],
       ),
@@ -61,7 +62,11 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
           } else if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No vehicles found. Add one!'));
+            return const EmptyStateMessage(
+              icon: Icons.garage_outlined,
+              title: 'No Vehicles Yet',
+              message: 'Tap the "+" button to add your first vehicle and start tracking its maintenance.',
+            );
           } else {
             final vehicles = snapshot.data!;
             return ListView.builder(
@@ -93,7 +98,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToAddVehicleScreen,
+        onPressed: navigateToAddVehicleScreen,
         child: const Icon(Icons.add),
       ),
     );

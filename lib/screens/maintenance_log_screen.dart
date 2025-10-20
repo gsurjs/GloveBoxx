@@ -7,6 +7,7 @@ import '../models/vehicle.dart';
 import '../services/database_helper.dart';
 import 'add_maintenance_screen.dart';
 import 'dart:io';
+import '../widgets/empty_state_message.dart';
 
 
 class MaintenanceLogScreen extends StatefulWidget {
@@ -46,7 +47,11 @@ class _MaintenanceLogScreenState extends State<MaintenanceLogScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No maintenance records yet.'));
+            return const EmptyStateMessage(
+              icon: Icons.receipt_long_outlined,
+              title: 'No Service History',
+              message: 'Tap the "+" button to log your first maintenance activity for this vehicle.',
+            );
           } else {
             final records = snapshot.data!;
             return ListView.builder(

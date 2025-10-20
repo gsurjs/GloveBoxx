@@ -8,6 +8,7 @@ import 'package:share_plus/share_plus.dart';
 import '../models/expense_category_data.dart';
 import '../models/expense_monthly_data.dart';
 import '../services/database_helper.dart';
+import '../widgets/empty_state_message.dart';
 
 class ExpenseSummaryScreen extends StatefulWidget {
   const ExpenseSummaryScreen({super.key});
@@ -102,7 +103,11 @@ class _ExpenseSummaryScreenState extends State<ExpenseSummaryScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text('No expense data to display.'),
+                  const EmptyStateMessage(
+                    icon: Icons.monetization_on_outlined,
+                    title: 'No Expense Data',
+                    message: 'Add a maintenance record with a cost to see your expense summary here.',
+                  ),
                   const SizedBox(height: 20),
                   ElevatedButton.icon(
                     icon: const Icon(Icons.share),

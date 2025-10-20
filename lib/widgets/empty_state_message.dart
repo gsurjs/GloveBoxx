@@ -4,12 +4,14 @@ class EmptyStateMessage extends StatelessWidget {
   final IconData icon;
   final String title;
   final String message;
+  final Widget? actionButton;
 
   const EmptyStateMessage({
     super.key,
     required this.icon,
     required this.title,
     required this.message,
+    this.actionButton
   });
 
   @override
@@ -34,6 +36,11 @@ class EmptyStateMessage extends StatelessWidget {
               style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
               textAlign: TextAlign.center,
             ),
+            // conditional action button
+            if (actionButton != null) ...[
+              const SizedBox(height: 24),
+              actionButton!,
+            ]
           ],
         ),
       ),
