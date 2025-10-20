@@ -38,7 +38,7 @@ class _ExpenseSummaryScreenState extends State<ExpenseSummaryScreen> {
 
   Future<void> _exportReport() async {
     final allRecords = await DatabaseHelper.instance.getAllRecordsForReport();
-
+    if (!mounted) return;
     if (allRecords.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No data to export.')),

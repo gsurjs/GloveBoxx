@@ -25,4 +25,8 @@ class VehicleProvider with ChangeNotifier {
     await DatabaseHelper.instance.createVehicle(vehicle);
     await fetchVehicles(); // This will refresh the list and notify all listeners
   }
+  Future<void> deleteVehicle(int id) async {
+    await DatabaseHelper.instance.deleteVehicle(id);
+    await fetchVehicles(); // This will refresh the list and notify all listeners
+  }
 }

@@ -197,6 +197,15 @@ class DatabaseHelper {
       photoPath: json['photoPath'] as String?,
     )).toList();
   }
+
+  Future<int> deleteVehicle(int id) async {
+    final db = await instance.database;
+    return await db.delete(
+      'vehicles',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
   
 
   Future close() async {

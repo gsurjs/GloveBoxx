@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:provider/provider.dart';
 import '../models/upcoming_maintenance_view.dart';
 import '../providers/theme_provider.dart';
@@ -6,6 +8,7 @@ import '../providers/vehicle_provider.dart';
 import '../services/database_helper.dart';
 import '../widgets/empty_state_message.dart';
 import '../widgets/local_image_widget.dart';
+import 'maintenance_log_screen.dart';
 
 class HomeDashboardScreen extends StatefulWidget {
   final VoidCallback? onNavigateRequest;
@@ -59,14 +62,12 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
 
           return RefreshIndicator(
             onRefresh: () async {
-              // Refresh both providers/futures
               await vehicleProvider.fetchVehicles();
               _refreshUpcoming();
             },
             child: ListView(
               padding: const EdgeInsets.all(16.0),
               children: [
-                // Upcoming Maintenance Card
                 FutureBuilder<List<UpcomingMaintenanceView>>(
                   future: _upcomingMaintenanceFuture,
                   builder: (context, snapshot) {
@@ -103,13 +104,11 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                     );
                   },
                 ),
-                
                 const SizedBox(height: 20),
                 const Text('My Vehicles',
                     style:
                         TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 10),
-
                 if (vehicles.isEmpty)
                   EmptyStateMessage(
                     icon: Icons.directions_car_outlined,
@@ -123,20 +122,72 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                     ),
                   )
                 else
-                  ...vehicles.map((vehicle) => Card(
-                        elevation: 2.0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.0),
+                  ...vehicles.map((vehicle) => Slidable(
+                        endActionPane: ActionPane(
+                          motion: const StretchMotion(),
+                          children: [
+                            SlidableAction(
+                              onPressed: (context) {
+                                showDialog(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    title: const Text('Delete Vehicle'),
+                                    content: Text(
+                                        'Are you sure you want to delete the ${vehicle.year} ${vehicle.make} ${vehicle.model}?'),
+                                    actions: [
+                                      TextButton(
+                                        child: const Text('Cancel'),
+                                        onPressed: () => Navigator.of(ctx).pop(),
+                                      ),
+                                      TextButton(
+                                        child: const Text('Delete',
+                                            style: TextStyle(color: Colors.red)),
+                                        onPressed: () {
+                                          // Grab a reference to the provider before the dialog is closed
+                                          final vehicleProvider = Provider.of<VehicleProvider>(ctx, listen: false);
+
+                                          // Pop the dialog BEFORE updating the state
+                                          Navigator.of(ctx).pop();
+
+                                          // Now, safely update the state and give haptic feedback
+                                          vehicleProvider.deleteVehicle(vehicle.id!);
+                                          HapticFeedback.mediumImpact();
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                              icon: Icons.delete,
+                              label: 'Delete',
+                            ),
+                          ],
                         ),
-                        child: ListTile(
-                          leading: LocalImage(
-                            fileName: vehicle.photoPath,
-                            placeholderIcon: Icons.directions_car,
+                        child: Card(
+                          elevation: 2.0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10.0),
                           ),
-                          title: Text(
-                              '${vehicle.year} ${vehicle.make} ${vehicle.model}'),
-                          subtitle:
-                              Text('Current Mileage: ${vehicle.mileage} mi'),
+                          child: ListTile(
+                            leading: LocalImage(
+                              fileName: vehicle.photoPath,
+                              placeholderIcon: Icons.directions_car,
+                            ),
+                            title: Text(
+                                '${vehicle.year} ${vehicle.make} ${vehicle.model}'),
+                            subtitle:
+                                Text('Current Mileage: ${vehicle.mileage} mi'),
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      MaintenanceLogScreen(vehicle: vehicle),
+                                ),
+                              );
+                            },
+                          ),
                         ),
                       )),
               ],
