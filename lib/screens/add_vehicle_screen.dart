@@ -4,6 +4,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import '../models/vehicle.dart';
+import 'package:flutter/services.dart';
+import '../utils/text_formatters.dart';
 
 class AddVehicleScreen extends StatefulWidget {
   final Function(Vehicle) onSave;
@@ -127,6 +129,10 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                 controller: _mileageController,
                 decoration: const InputDecoration(labelText: 'Current Mileage *'),
                 keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  ThousandsSeparatorInputFormatter(),
+                ],
                 validator: (value) => value!.isEmpty ? 'Please enter mileage' : null,
               ),
               const SizedBox(height: 20),

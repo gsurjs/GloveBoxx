@@ -6,6 +6,8 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import '../models/maintenance_record.dart';
 import '../services/database_helper.dart';
+import 'package:flutter/services.dart';
+import '../utils/text_formatters.dart';
 
 class AddMaintenanceScreen extends StatefulWidget {
   final int vehicleId;
@@ -148,12 +150,20 @@ class _AddMaintenanceScreenState extends State<AddMaintenanceScreen> {
                 controller: _mileageController,
                 decoration: const InputDecoration(labelText: 'Mileage *'),
                 keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  ThousandsSeparatorInputFormatter(),
+                ],
                 validator: (value) => value!.isEmpty ? 'Please enter mileage' : null,
               ),
               TextFormField(
                 controller: _costController,
-                decoration: const InputDecoration(labelText: 'Cost *'),
+                decoration: const InputDecoration(labelText: 'Cost *', prefixText: '\$',),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  // Allows numbers and a single decimal point with up to 2 decimal places
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                ],
                 validator: (value) => value!.isEmpty ? 'Please enter a cost' : null,
               ),
               const SizedBox(height: 10),
