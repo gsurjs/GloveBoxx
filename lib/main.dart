@@ -26,7 +26,7 @@ class MyApp extends StatelessWidget {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return MaterialApp(
-      title: 'Vehicle Maintenance Tracker',
+      title: 'GloveBoxx',
       theme: ThemeData( // light theme
         brightness: Brightness.light,
         primarySwatch: Colors.blue,
