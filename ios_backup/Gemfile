@@ -1,0 +1,7 @@
+source 'https://rubygems.org'
+
+# This forces CocoaPods to use the stable 1.24.0 version of xcodeproj
+gem 'xcodeproj', '1.24.0'
+
+# This lets the system find the latest compatible version of CocoaPods
+gem 'cocoapods'

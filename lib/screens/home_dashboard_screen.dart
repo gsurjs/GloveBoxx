@@ -65,7 +65,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
 
           return RefreshIndicator(
             onRefresh: () async {
-              await vehicleProvider.fetchVehicles();
+              await vehicleProvider.fetchAllData();
               _refreshUpcoming();
             },
             child: ListView(
@@ -196,7 +196,9 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                                   builder: (context) =>
                                       MaintenanceLogScreen(vehicle: vehicle),
                                 ),
-                              );
+                              ).then((_) {
+                                _refreshUpcoming();
+                              });
                             },
                           ),
                         ),

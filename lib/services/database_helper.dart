@@ -218,13 +218,23 @@ class DatabaseHelper {
     )).toList();
   }
 
-  Future<int> deleteVehicle(int id) async {
+  Future<void> deleteVehicle(int id) async {
     final db = await instance.database;
-    return await db.delete(
-      'vehicles',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    // Use a transaction to ensure both operations succeed or fail together
+    await db.transaction((txn) async {
+      // First, delete all maintenance records associated with this vehicle
+      await txn.delete(
+        'maintenance_records',
+        where: 'vehicleId = ?',
+        whereArgs: [id],
+      );
+      // Then, delete the vehicle itself
+      await txn.delete(
+        'vehicles',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    });
   }
 
   Future<int> updateVehicle(Vehicle vehicle) async {
