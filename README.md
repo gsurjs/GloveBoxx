@@ -1,6 +1,7 @@
 # GloveBoxx: Vehicle Maintenance Tracker
 
-**Stop Using Your Car's Glove Box For Receipts!**
+**Stop Storing Receipts In Your Car's Glove Box!**
+**Never Miss Another Service Interval.**
 
 > A cross platform mobile app built to help you manage your vehicle's maintenance history, track expenses, and get reminders for upcoming services.
 
