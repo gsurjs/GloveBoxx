@@ -46,10 +46,21 @@ class _AddMaintenanceScreenState extends State<AddMaintenanceScreen> {
     _notesController = TextEditingController(text: record?.notes ?? '');
     _selectedDate = record?.date;
 
-    if (record?.nextDueDate != null) {
+    if (record?.nextDueDate != null && record?.date != null) {
       _setReminder = true;
-      // Note: This doesn't reverse-calculate the exact dropdown values,
-      // but it preserves the reminder status.
+      final difference = record!.nextDueDate!.difference(record.date!);
+      final days = difference.inDays;
+
+      if (days > 0 && days % 30 == 0) {
+        _reminderUnit = 'Months';
+        _reminderValue = days ~/ 30;
+      } else if (days > 0 && days % 7 == 0) {
+        _reminderUnit = 'Weeks';
+        _reminderValue = days ~/ 7;
+      } else {
+        _reminderUnit = 'Days';
+        _reminderValue = days;
+      }
     }
     
     _loadInitialImage();
@@ -92,22 +103,28 @@ class _AddMaintenanceScreenState extends State<AddMaintenanceScreen> {
   void _submitForm() async {
     if (_formKey.currentState!.validate()) {
       if (_selectedDate == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select a date.')),
-        );
+        if(mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please select a date.')),
+          );
+        }
         return;
       }
 
       DateTime? nextDueDate;
-      if (_setReminder && widget.record?.nextDueDate == null) {
+      if (_setReminder) {
+        // Always calculate a new due date based on the dropdowns if the box is checked
         int daysToAdd = 0;
-        if (_reminderUnit == 'Days') daysToAdd = _reminderValue;
-        else if (_reminderUnit == 'Weeks') daysToAdd = _reminderValue * 7;
-        else if (_reminderUnit == 'Months') daysToAdd = _reminderValue * 30;
+        if (_reminderUnit == 'Days') {
+          daysToAdd = _reminderValue;
+        } else if (_reminderUnit == 'Weeks') {
+          daysToAdd = _reminderValue * 7;
+        } else if (_reminderUnit == 'Months') {
+          daysToAdd = _reminderValue * 30; // Approximation
+        }
         nextDueDate = _selectedDate!.add(Duration(days: daysToAdd));
-      } else {
-        nextDueDate = widget.record?.nextDueDate;
       }
+      // If _setReminder is false, nextDueDate will be null, correctly removing the reminder.
 
       final newOrUpdatedRecord = MaintenanceRecord(
         id: widget.record?.id,

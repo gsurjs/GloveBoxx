@@ -5,9 +5,11 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:transparent_image/transparent_image.dart';
 import '../models/maintenance_record.dart';
 import '../models/vehicle.dart';
+import '../providers/vehicle_provider.dart';
 import '../services/database_helper.dart';
 import '../widgets/empty_state_message.dart';
 import 'add_maintenance_screen.dart';
@@ -31,17 +33,20 @@ class _MaintenanceLogScreenState extends State<MaintenanceLogScreen> {
   }
 
   void _refreshLogs() {
+    // Refresh the local list for this screen
     setState(() {
       _maintenanceRecordsFuture = DatabaseHelper.instance
           .readMaintenanceRecordsForVehicle(widget.vehicle.id!);
     });
+    // Also tell the global provider to refresh ALL data for the app
+    Provider.of<VehicleProvider>(context, listen: false).fetchAllData();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.vehicle.model} Log'),
+        title: Text('${widget.vehicle.make} ${widget.vehicle.model} Log'),
       ),
       body: FutureBuilder<List<MaintenanceRecord>>(
         future: _maintenanceRecordsFuture,
@@ -165,6 +170,18 @@ class _MaintenanceLogScreenState extends State<MaintenanceLogScreen> {
                             ),
                         ],
                       ),
+                      onTap: () {
+                        Navigator.of(context)
+                            .push(
+                              MaterialPageRoute(
+                                builder: (context) => AddMaintenanceScreen(
+                                  vehicleId: widget.vehicle.id!,
+                                  record: record,
+                                ),
+                              ),
+                            )
+                            .then((_) => _refreshLogs());
+                      },
                     ),
                   ),
                 );
