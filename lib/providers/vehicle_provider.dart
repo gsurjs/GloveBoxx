@@ -9,13 +9,13 @@ class VehicleProvider with ChangeNotifier {
   List<Vehicle> _vehicles = [];
   List<ExpenseCategoryData> _expenseByCategory = [];
   List<ExpenseMonthlyData> _expenseByMonth = [];
-  List<UpcomingMaintenanceView> _upcomingMaintenance = []; // The missing property
+  List<UpcomingMaintenanceView> _upcomingMaintenance = []; // Added to store upcoming maintenance data
   bool _isLoading = true;
 
   List<Vehicle> get vehicles => _vehicles;
   List<ExpenseCategoryData> get expenseByCategory => _expenseByCategory;
   List<ExpenseMonthlyData> get expenseByMonth => _expenseByMonth;
-  List<UpcomingMaintenanceView> get upcomingMaintenance => _upcomingMaintenance; // The missing getter
+  List<UpcomingMaintenanceView> get upcomingMaintenance => _upcomingMaintenance; // Getter for upcoming maintenance data
   bool get isLoading => _isLoading;
 
   VehicleProvider() {
