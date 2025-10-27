@@ -5,6 +5,8 @@
 
 > A cross platform mobile app built to help you manage your vehicle's maintenance history, track expenses, and get reminders for upcoming services.
 
+[Group UI Presentation & Demo](https://youtu.be/x0zpf1QmhtI)
+
 ![App Demo](./assets/screenrec.gif) ![App Demo](./assets/expense0.jpg) ![App Demo](./assets/expense1.jpg)
 
 ## Features
